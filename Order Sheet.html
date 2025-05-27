@@ -210,11 +210,11 @@ document.getElementById('processButton').addEventListener('click', () => {
 
         const texture = row["SCP Type of Diet Texture"]?.trim();
         const fluid = row["SCP Thickened Fluid"]?.trim();
-        const allergy = row["Allergies: Food"]?.trim() || row["Allergies"]?.trim();
+        const allergy = row["Allergies: Food"]?.trim();
         const likes = row["Likes"]?.trim();
         const dislikes = row["Dislikes"]?.trim();
         const others = row["Other type of diet"]?.trim();
-
+        
         if (texture && !group.texture) {
           group.texture = texture;
           textureCount[texture] = (textureCount[texture] || 0) + 1;
