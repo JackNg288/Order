@@ -99,12 +99,11 @@
 <input type="file" id="csvUpload" accept=".csv">
 <button id="processButton">Process</button>
 <button onclick="printPDF()">Print PDF</button>
-
+<div id="currentDate" style="font-size: 20px; font-weight: bold; margin-bottom: 10px;"></div>
 <div id="summaryWrapper">
   <div id="summary"></div>
   <div id="dietMatrix"></div>
 </div>
-
 <div id="residentTable">
   <table>
     <thead>
@@ -162,6 +161,7 @@ const iddsiMatrixStyles = {
   "7 - Regular": ["#000000", "#FFFFFF"]
 };
 
+document.getElementById("currentDate").innerText = new Date().toLocaleDateString('en-GB') + " Lunch/Dinner";
 document.getElementById('csvUpload').addEventListener('change', (e) => {
   uploadedFile = e.target.files[0];
 });
@@ -516,6 +516,7 @@ function getCurrentTimestamp() {
 }
 function printPDF() {
   const timestamp = getCurrentTimestamp();
+  const currentDateText = document.getElementById('currentDate').outerHTML;
   const printWindow = window.open('', '', 'width=1000,height=800');
   printWindow.document.write(`
     <html>
@@ -571,6 +572,7 @@ function printPDF() {
         </style>
       </head>
       <body>
+        ${currentDateText}
         ${document.getElementById('summaryWrapper').outerHTML}
         ${document.getElementById('residentTable').outerHTML}
         <div class="timestamp">Printed on: ${timestamp}</div>
