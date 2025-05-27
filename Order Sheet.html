@@ -218,12 +218,12 @@
 
           const group = grouped[roomNumber];
           if (residentName) group.residents.add(residentName);
-        const texture = row["SCP Type of Diet Texture"]?.trim();
-        const fluid = row["SCP Thickened Fluid"]?.trim();
-        const allergy = row["Allergies: Food"]?.trim();
-        const likes = row["Likes"]?.trim();
-        const dislikes = row["Dislikes"]?.trim();
-        const others = row["Other type of diet"]?.trim();
+          const texture = row[14]?.trim();
+          const fluid = row[16]?.trim();
+          const allergy = row[6]?.trim();
+          const likes = row[7]?.trim();
+          const dislikes = row[8]?.trim();
+          const others = row[9]?.trim();
 
           if (texture && !group.texture) {
             group.texture = texture;
