@@ -70,26 +70,6 @@
       padding: 7px 9px;
       font-size: 12px;
     }
-
-    #mealCardPopup {
-      display: none;
-      position: fixed;
-      top: 5%;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 420px;
-      height: 590px;
-      background: #fff;
-      border: 2px solid #ccc;
-      box-shadow: 0 0 15px rgba(0,0,0,0.3);
-      z-index: 9999;
-      padding: 15px;
-      font-size: 12px;
-    }
-    #mealCardPopup canvas {
-      border: 1px solid #000;
-      margin-bottom: 10px;
-    }
   </style>
 </head>
 <body>
@@ -117,7 +97,6 @@
         <th style="width: 160px;">Likes</th>
         <th style="width: 160px;">Dislikes</th>
         <th style="width: 140px;">Others</th>
-        <th style="width: 90px;">Meal Card</th>
         <th>Soup</th>
         <th>Meal 1</th>
         <th>Meal 2</th>
@@ -130,221 +109,197 @@
     <tbody id="tableBody"></tbody>
   </table>
 </div>
+
 <script>
-let uploadedFile = null;
+  let uploadedFile = null;
 
-const textureLabels = [
-  "0 - Thin", "1 - Slightly thick", "2 - Mildly thick", "3 - Moderately thick",
-  "4 - Extremely thick", "4 - Pureed", "5 - Minced and Moist", "6 - Soft and Bite-sized",
-  "7 - Easy to Chew", "7 - Regular"
-];
+  const textureLabels = [
+    "0 - Thin", "1 - Slightly thick", "2 - Mildly thick", "3 - Moderately thick",
+    "4 - Extremely thick", "4 - Pureed", "5 - Minced and Moist", "6 - Soft and Bite-sized",
+    "7 - Easy to Chew", "7 - Regular"
+  ];
 
-const iddsiMatrixStyles = {
-  "0 - Thin": ["#FFFFFF", "#000000"],
-  "1 - Slightly thick": ["#A9A9A9", "#FFFFFF"],
-  "2 - Mildly thick": ["#FFC0CB", "#000000"],
-  "3 - Moderately thick": ["#FFFC6C", "#000000"],
-  "4 - Extremely thick": ["#80F870", "#000000"],
-  "4 - Pureed": ["#80F870", "#000000"],
-  "5 - Minced and Moist": ["#F6C460", "#000000"],
-  "6 - Soft and Bite-sized": ["#2DAAFF", "#FFFFFF"],
-  "7 - Easy to Chew": ["#000000", "#FFFFFF"],
-  "7 - Regular": ["#000000", "#FFFFFF"]
-};
+  const iddsiMatrixStyles = {
+    "0 - Thin": ["#FFFFFF", "#000000"],
+    "1 - Slightly thick": ["#A9A9A9", "#FFFFFF"],
+    "2 - Mildly thick": ["#FFC0CB", "#000000"],
+    "3 - Moderately thick": ["#FFFC6C", "#000000"],
+    "4 - Extremely thick": ["#80F870", "#000000"],
+    "4 - Pureed": ["#80F870", "#000000"],
+    "5 - Minced and Moist": ["#F6C460", "#000000"],
+    "6 - Soft and Bite-sized": ["#2DAAFF", "#FFFFFF"],
+    "7 - Easy to Chew": ["#000000", "#FFFFFF"],
+    "7 - Regular": ["#000000", "#FFFFFF"]
+  };
 
-document.getElementById('csvUpload').addEventListener('change', (e) => {
-  uploadedFile = e.target.files[0];
-});
+  document.getElementById('csvUpload').addEventListener('change', (e) => {
+    uploadedFile = e.target.files[0];
+  });
 
-function getIDDSIStyle(value) {
-  const [bg, color] = iddsiMatrixStyles[value] || ["#FFFFFF", "#000000"];
-  return `background-color: ${bg}; color: ${color}; font-weight: bold;`;
-}
-
-document.getElementById('processButton').addEventListener('click', () => {
-  if (!uploadedFile) {
-    alert("Please upload a CSV file first.");
-    return;
+  function renderDietMatrix() {
+    const dietMatrix = document.getElementById('dietMatrix');
+    let html = '<table class="matrix-table"><thead><tr><th>Diet Texture</th><th>Soup</th><th>Meal 1</th><th>Meal 2</th><th>Veg</th><th>Side</th><th>Dessert 1</th><th>Dessert 2</th></tr></thead><tbody>';
+    textureLabels.forEach(label => {
+      const [bg, color] = iddsiMatrixStyles[label] || ["#FFF", "#000"];
+      html += `<tr>
+        <td style="background-color:${bg}; color:${color}; font-weight:bold;">${label}</td>
+        ${'<td></td>'.repeat(7)}
+      </tr>`;
+    });
+    html += '</tbody></table>';
+    dietMatrix.innerHTML = html;
   }
 
-  Papa.parse(uploadedFile, {
-    header: true,
-    skipEmptyLines: true,
-    complete: function(results) {
-      const data = results.data;
-      const tableBody = document.getElementById("tableBody");
-      const summaryDiv = document.getElementById("summary");
-      tableBody.innerHTML = "";
-      summaryDiv.innerHTML = "";
+  function getIDDSIStyle(value, type) {
+    const mapping = {
+      food: {
+        "7 - Regular": ["#000000", "#FFFFFF"],
+        "7 - Easy to Chew": ["#000000", "#FFFFFF"],
+        "6 - Soft and Bite-sized": ["#2DAAFF", "#FFFFFF"],
+        "5 - Minced and Moist": ["#F6C460", "#000000"],
+        "4 - Pureed": ["#80F870", "#000000"],
+        "3 - Liquidised": ["#FFFC6C", "#000000"]
+      },
+      fluid: {
+        "4 - Extremely thick": ["#80F870", "#000000"],
+        "3 - Moderately thick": ["#FFFC6C", "#000000"],
+        "2 - Mildly thick": ["#FFC0CB", "#000000"],
+        "1 - Slightly thick": ["#A9A9A9", "#FFFFFF"],
+        "0 - Thin": ["#FFFFFF", "#000000"]
+      }
+    };
+    const [bg, color] = mapping[type][value] || ["#FFFFFF", "#000000"];
+    return `background-color: ${bg}; color: ${color}; font-weight: bold;`;
+  }
 
-      const grouped = {};
-      const textureCount = {};
-      const fluidCount = {};
-      let likesCount = 0;
-      let dislikesCount = 0;
+  document.getElementById('processButton').addEventListener('click', () => {
+    if (!uploadedFile) {
+      alert("Please upload a CSV file first.");
+      return;
+    }
 
-      data.forEach(row => {
-        const fullName = row["Resident Name"] || row[Object.keys(row)[0]];
-        const allMatches = [...fullName.matchAll(/\(([^)]+)\)/g)];
-        const roomNumber = allMatches.length ? allMatches[allMatches.length - 1][1] : "Unknown";
-        const cleanedName = fullName.replace(/\([^)]+\)/g, "").trim();
-        const nameParts = cleanedName.split(",");
-        const residentName = nameParts.length >= 2
-          ? nameParts[1].trim() + " " + nameParts[0].trim()
-          : cleanedName;
+    Papa.parse(uploadedFile, {
+      header: false,
+      skipEmptyLines: true,
+      complete: function(results) {
+        const data = results.data;
+        const tableBody = document.getElementById("tableBody");
+        const summaryDiv = document.getElementById("summary");
+        tableBody.innerHTML = "";
+        summaryDiv.innerHTML = "";
 
-        if (!grouped[roomNumber]) {
-          grouped[roomNumber] = {
-            residents: new Set(),
-            texture: null,
-            fluid: null,
-            allergies: new Set(),
-            likes: null,
-            dislikes: null,
-            others: null
-          };
-        }
+        const contentRows = data.slice(1);
+        const grouped = {};
+        const textureCount = {};
+        const fluidCount = {};
+        let likesCount = 0;
+        let dislikesCount = 0;
 
-        const group = grouped[roomNumber];
-        if (residentName) group.residents.add(residentName);
+        contentRows.forEach(row => {
+          const fullName = row[0] || "";
+          const roomMatch = fullName.match(/\((\d+)\)/);
+          const nameParts = fullName.replace(/\(.*\)/, "").split(",");
+          let residentName = nameParts.length >= 2
+            ? nameParts[1].trim() + " " + nameParts[0].trim()
+            : fullName.trim();
+          const roomNumber = roomMatch ? roomMatch[1] : "Unknown";
 
+          if (!grouped[roomNumber]) {
+            grouped[roomNumber] = {
+              residents: new Set(),
+              texture: null,
+              fluid: null,
+              allergies: new Set(),
+              likes: null,
+              dislikes: null,
+              others: null
+            };
+          }
+
+          const group = grouped[roomNumber];
+          if (residentName) group.residents.add(residentName);
         const texture = row["SCP Type of Diet Texture"]?.trim();
         const fluid = row["SCP Thickened Fluid"]?.trim();
         const allergy = row["Allergies: Food"]?.trim();
         const likes = row["Likes"]?.trim();
         const dislikes = row["Dislikes"]?.trim();
         const others = row["Other type of diet"]?.trim();
-        
-        if (texture && !group.texture) {
-          group.texture = texture;
-          textureCount[texture] = (textureCount[texture] || 0) + 1;
-        }
-        if (fluid && !group.fluid) {
-          group.fluid = fluid;
-          fluidCount[fluid] = (fluidCount[fluid] || 0) + 1;
-        }
-        if (allergy) group.allergies.add(allergy);
-        if (likes && !group.likes) {
-          group.likes = likes;
-          likesCount++;
-        }
-        if (dislikes && !group.dislikes) {
-          group.dislikes = dislikes;
-          dislikesCount++;
-        }
-        if (others && !group.others) group.others = others;
-      });
 
-      summaryDiv.innerHTML = `
-        <h3>📍 <strong>${uploadedFile.name.replace(".csv", "")}</strong></h3>
-        <div><strong>👥 Total Residents:</strong> ${Object.keys(grouped).length}</div>
-        <div><strong>🍽️ Food Texture:</strong><ul>${Object.entries(textureCount).map(([k,v]) => `<li>${k}: ${v}</li>`).join("")}</ul></div>
-        <div><strong>💧 Fluid Consistency:</strong><ul>${Object.entries(fluidCount).map(([k,v]) => `<li>${k}: ${v}</li>`).join("")}</ul></div>
-        <div><strong>👍 Likes:</strong> ${likesCount}<br><strong>👎 Dislikes:</strong> ${dislikesCount}</div>
-      `;
-       renderDietMatrix();
+          if (texture && !group.texture) {
+            group.texture = texture;
+            textureCount[texture] = (textureCount[texture] || 0) + 1;
+          }
+          if (fluid && !group.fluid) {
+            group.fluid = fluid;
+            fluidCount[fluid] = (fluidCount[fluid] || 0) + 1;
+          }
+          if (allergy) group.allergies.add(allergy);
+          if (likes && !group.likes) {
+            group.likes = likes;
+            likesCount++;
+          }
+          if (dislikes && !group.dislikes) {
+            group.dislikes = dislikes;
+            dislikesCount++;
+          }
+          if (others && !group.others) group.others = others;
+        });
 
-      Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b)).forEach(([room, details]) => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${room}</td>
-          <td>${[...details.residents].join(", ")}</td>
-          <td style="${getIDDSIStyle(details.texture)}">${details.texture || ""}</td>
-          <td style="${getIDDSIStyle(details.fluid)}">${details.fluid || ""}</td>
-          <td>${[...details.allergies].join(", ")}</td>
-          <td class="likes">${details.likes || ""}</td>
-          <td class="dislikes">${details.dislikes || ""}</td>
-          <td class="others">${details.others || ""}</td>
-          <td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+        summaryDiv.innerHTML = `
+          <h3>📍 <strong>${uploadedFile.name.replace(".csv", "")}</strong></h3>
+          <div><strong>👥 Total Residents:</strong> ${Object.keys(grouped).length}</div>
+          <div><strong>🍽️ Food Texture:</strong><ul>${Object.entries(textureCount).map(([k,v]) => `<li>${k}: ${v}</li>`).join("")}</ul></div>
+          <div><strong>💧 Fluid Consistency:</strong><ul>${Object.entries(fluidCount).map(([k,v]) => `<li>${k}: ${v}</li>`).join("")}</ul></div>
+          <div><strong>👍 Likes:</strong> ${likesCount}<br><strong>👎 Dislikes:</strong> ${dislikesCount}</div>
         `;
-        tableBody.appendChild(tr);
-      });
 
-      document.getElementById("residentTable").style.display = "block";
-    }
+        renderDietMatrix();
+
+        Object.entries(grouped).forEach(([room, details]) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${room}</td>
+            <td>${[...details.residents].join(", ")}</td>
+            <td style="${getIDDSIStyle(details.texture, "food")}">${details.texture || ""}</td>
+            <td style="${getIDDSIStyle(details.fluid, "fluid")}">${details.fluid || ""}</td>
+            <td>${[...details.allergies].join(", ")}</td>
+            <td class="likes">${details.likes || ""}</td>
+            <td class="dislikes">${details.dislikes || ""}</td>
+            <td class="others">${details.others || ""}</td>
+            <td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+          `;
+          document.getElementById("tableBody").appendChild(tr);
+        });
+
+        document.getElementById("residentTable").style.display = "block";
+      }
+    });
   });
-});
 
-function renderDietMatrix() {
-  const dietMatrix = document.getElementById('dietMatrix');
-  let html = '<table class="matrix-table"><thead><tr><th>Diet Texture</th><th>Soup</th><th>Meal 1</th><th>Meal 2</th><th>Veg</th><th>Side</th><th>Dessert 1</th><th>Dessert 2</th></tr></thead><tbody>';
-  textureLabels.forEach(label => {
-    const [bg, color] = iddsiMatrixStyles[label] || ["#FFF", "#000"];
-    html += `<tr><td style="background-color:${bg}; color:${color}; font-weight:bold;">${label}</td>${'<td></td>'.repeat(7)}</tr>`;
-  });
-  html += '</tbody></table>';
-  dietMatrix.innerHTML = html;
-}
-
-function getCurrentTimestamp() {
-  const now = new Date();
-  return `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} - ${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
-}
-
-function printPDF() {
-  const timestamp = getCurrentTimestamp();
-  const printWindow = window.open('', '', 'width=1000,height=800');
-  printWindow.document.write(`
-    <html>
-      <head>
-        <title>Resident Meal PDF</title>
-        <style>
-          @page { margin: 10mm; size: auto; }
-          body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            position: relative;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-          }
-          table {
-            border-collapse: collapse;
-            width: 100%;
-            background: #fff;
-          }
-          th, td {
-            border: 1px solid #000;
-            padding: 12px;
-            text-align: left;
-          }
-          td.likes, td.dislikes, td.others {
-            font-size: 12px;
-          }
-          #summaryWrapper {
-            display: flex;
-            flex-direction: row;
-            gap: 20px;
-            align-items: flex-start;
-            margin: 20px 0;
-          }
-          #summary { flex: 0 0 220px; }
-          #dietMatrix { flex-grow: 1; }
-          #dietMatrix table th, #dietMatrix table td {
-            padding: 7px 9px;
-            font-size: 12px;
-          }
-          .timestamp {
-            position: fixed;
-            bottom: 10px;
-            left: 0;
-            right: 0;
-            text-align: center;
-            font-size: 10px;
-            color: #555;
-          }
-        </style>
-      </head>
-      <body>
-        ${document.getElementById('summaryWrapper').outerHTML}
-        ${document.getElementById('residentTable').outerHTML}
-        <div class="timestamp">Printed on: ${timestamp}</div>
-      </body>
-    </html>
-  `);
-  printWindow.document.close();
-  printWindow.focus();
-  printWindow.print();
-}
+  function printPDF() {
+    const printWindow = window.open('', '', 'width=1000,height=800');
+    printWindow.document.write('<html><head><title>Resident Meal PDF</title><style>');
+    printWindow.document.write(`
+      @page { margin: 10mm; }
+      body { margin: 0; font-family: Arial, sans-serif; }
+      table { border-collapse: collapse; width: 100%; background: #fff; }
+      th, td { border: 1px solid #000; padding: 12px; text-align: left; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      td.likes, td.dislikes, td.others { font-size: 12px; }
+      #summaryWrapper { display: flex; flex-direction: row; gap: 20px; align-items: flex-start; margin: 20px 0; }
+      #summary { flex: 0 0 220px; }
+      #dietMatrix { flex-grow: 1; }
+      #dietMatrix table th, #dietMatrix table td { padding: 7px 9px; font-size: 12px; }
+    `);
+    printWindow.document.write('</style></head><body>');
+    printWindow.document.write(document.getElementById('summaryWrapper').outerHTML);
+    printWindow.document.write(document.getElementById('residentTable').outerHTML);
+    printWindow.document.write('</body></html>');
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
+  }
 </script>
+
 </body>
 </html>
