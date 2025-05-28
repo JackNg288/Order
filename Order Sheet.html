@@ -121,7 +121,7 @@
         <th>Meal 1</th>
         <th>Meal 2</th>
         <th>Vegetarian</th>
-        <th>Side/Veg</th>
+        <th>Side-Veg</th>
         <th>Dessert</th>
         <th style="width: 240px;">Special Order</th>
       </tr>
@@ -168,7 +168,7 @@ document.getElementById('csvUpload').addEventListener('change', (e) => {
 
 function renderDietMatrix() {
   const dietMatrix = document.getElementById('dietMatrix');
-  let html = '<table class="matrix-table"><thead><tr><th>Diet Texture</th><th>Soup</th><th>Meal 1</th><th>Meal 2</th><th>Vegetarian</th><th>Side/Veg</th><th>Dessert 1</th></tr></thead><tbody>';
+  let html = '<table class="matrix-table"><thead><tr><th>Diet Texture</th><th>Soup</th><th>Meal 1</th><th>Meal 2</th><th>Vegetarian</th><th>Side-Veg</th><th>Dessert 1</th></tr></thead><tbody>';
   textureLabels.forEach(label => {
     const [bg, color] = iddsiMatrixStyles[label] || ["#FFF", "#000"];
     html += `<tr><td style="background-color:${bg}; color:${color}; font-weight:bold;">${label}</td>${'<td></td>'.repeat(7)}</tr>`;
