@@ -107,6 +107,8 @@
   </div>
 
   <script>
+    const googleScriptURL = "https://script.google.com/macros/s/AKfycbwkuMBswVkMX0Ve2LBwsyT0ntM61ooZ35H8fM6HJeZOl35GDtEYSiKJHK-BEF1Z5bFObw/exec";
+
     const levels = [
       "0 - Thin", "1 - Slightly thick", "2 - Mildly thick", "3 - Moderately thick",
       "4 - Extremely thick", "4 - Pureed", "5 - Minced and Moist",
@@ -179,16 +181,21 @@
         totals[meal][formattedDate] = {};
       }
 
+      let sheetData = [];
+
       for (let i = 1; i < foodTable.rows.length; i++) {
         const level = foodTable.rows[i].cells[0].innerText;
         if (!totals[meal][formattedDate][level]) {
           totals[meal][formattedDate][level] = [0, 0, 0, 0, 0, 0];
         }
+        let rowData = [formattedDate, unit, level];
         for (let j = 1; j <= 6; j++) {
           const input = foodTable.rows[i].cells[j].querySelector('input');
           const value = parseInt(input.value) || 0;
           totals[meal][formattedDate][level][j - 1] += value;
+          rowData.push(value);
         }
+        sheetData.push(rowData);
       }
 
       updateTotalTable(meal, formattedDate, targetTable);
@@ -202,6 +209,22 @@
       }
 
       localStorage.setItem('totals', JSON.stringify(totals));
+
+      // Send to Google Sheets
+      sheetData.forEach(row => {
+        const formData = new FormData();
+        formData.append("Date", row[0]);
+        formData.append("Unit", row[1]);
+        formData.append("Diet Texture", row[2]);
+        formData.append("Soup", row[3]);
+        formData.append("Meal 1", row[4]);
+        formData.append("Meal 2", row[5]);
+        formData.append("Vegetarian", row[6]);
+        formData.append("Side-Veg", row[7]);
+        formData.append("Dessert", row[8]);
+
+        fetch(googleScriptURL, { method: 'POST', body: formData });
+      });
     }
 
     function updateTotalTable(meal, dateKey, table) {
@@ -226,23 +249,16 @@
     function loadRecords() {
       const viewDate = document.getElementById('viewDate').value;
       if (!viewDate) return alert("Please select a date.");
-
       const formattedDate = formatDate(viewDate);
       const saved = localStorage.getItem('totals');
       if (!saved) return alert("No data found.");
-
       document.getElementById('tables').classList.remove('hidden');
       totals = JSON.parse(saved);
-
       ["Lunch", "Dinner"].forEach(meal => {
         const table = document.getElementById(meal.toLowerCase() + 'Table');
         const statusDiv = document.getElementById(meal.toLowerCase() + 'Status');
-
-        for (let i = table.rows.length - 1; i > 0; i--) {
-          table.deleteRow(i);
-        }
+        for (let i = table.rows.length - 1; i > 0; i--) table.deleteRow(i);
         statusDiv.innerHTML = '';
-
         if (totals[meal] && totals[meal][formattedDate]) {
           updateTotalTable(meal, formattedDate, table);
         }
@@ -259,7 +275,6 @@
         }
         csv += rowData.join(',') + '\n';
       }
-
       const blob = new Blob([csv], { type: 'text/csv' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
