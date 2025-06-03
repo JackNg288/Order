@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Food Order Total</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+    table, th, td {
+      border: 1px solid #444;
+      border-collapse: collapse;
+      padding: 5px;
+      text-align: center;
+    }
+    th {
+      background-color: #eee;
+    }
+    .hidden {
+      display: none;
+    }
+    .form-section {
+      margin-bottom: 20px;
+    }
+    .form-section label {
+      margin-right: 10px;
+    }
+    .section-title {
+      font-weight: bold;
+      font-size: 18px;
+      margin-top: 30px;
+    }
+    input[type="number"] {
+      width: 50px;
+    }
+    .status-line {
+      margin-bottom: 10px;
+      font-weight: bold;
+      color: green;
+    }
+    .export-button {
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Food Order Total</h1>
+
+  <div class="form-section">
+    <label for="date">Date:</label>
+    <input type="date" id="date">
+    
+    <label for="meal">Meal:</label>
+    <select id="meal">
+      <option value="">Select</option>
+      <option value="Lunch">Lunch</option>
+      <option value="Dinner">Dinner</option>
+    </select>
+
+    <label for="unit">Unit:</label>
+    <select id="unit">
+      <option value="">Select</option>
+      <option value="Cambridge Level 1">Cambridge Level 1</option>
+      <option value="Cambridge Level 2">Cambridge Level 2</option>
+      <option value="Riverside Level 1">Riverside Level 1</option>
+      <option value="Riverside Level 2">Riverside Level 2</option>
+      <option value="Level 3 North">Level 3 North</option>
+      <option value="Level 3 South">Level 3 South</option>
+    </select>
+  </div>
+
+  <div id="tables" class="hidden">
+    <div class="section-title" id="unit-title"></div>
+    
+    <table id="foodTable">
+      <tr>
+        <th>Diet Texture</th><th>Soup</th><th>Meal 1</th><th>Meal 2</th><th>Vegetarian</th><th>Side-Veg</th><th>Dessert</th>
+      </tr>
+    </table>
+
+    <button onclick="saveRecord()">Save Record</button>
+
+    <div class="section-title">Total Lunch</div>
+    <div id="lunchStatus" class="status-line"></div>
+    <table id="lunchTable">
+      <tr>
+        <th>Date</th><th>Diet Texture</th><th>Soup</th><th>Meal 1</th><th>Meal 2</th><th>Vegetarian</th><th>Side-Veg</th><th>Dessert</th>
+      </tr>
+    </table>
+    <button class="export-button" onclick="exportTableToCSV('lunchTable', 'Total_Lunch.csv')">Export Total Lunch to CSV</button>
+
+    <div class="section-title">Total Dinner</div>
+    <div id="dinnerStatus" class="status-line"></div>
+    <table id="dinnerTable">
+      <tr>
+        <th>Date</th><th>Diet Texture</th><th>Soup</th><th>Meal 1</th><th>Meal 2</th><th>Vegetarian</th><th>Side-Veg</th><th>Dessert</th>
+      </tr>
+    </table>
+    <button class="export-button" onclick="exportTableToCSV('dinnerTable', 'Total_Dinner.csv')">Export Total Dinner to CSV</button>
+  </div>
+
+  <div class="form-section">
+    <label for="viewDate">View Records for Date:</label>
+    <input type="date" id="viewDate">
+    <button onclick="loadRecords()">Load Records</button>
+  </div>
+
+  <script>
+    const levels = [
+      "0 - Thin", "1 - Slightly thick", "2 - Mildly thick", "3 - Moderately thick",
+      "4 - Extremely thick", "4 - Pureed", "5 - Minced and Moist",
+      "6 - Soft and Bite-sized", "7 - Easy to Chew", "7 - Regular"
+    ];
+
+    const iddsiMatrixStyles = {
+      "0 - Thin": ["#FFFFFF", "#000000"],
+      "1 - Slightly thick": ["#A9A9A9", "#FFFFFF"],
+      "2 - Mildly thick": ["#FFC0CB", "#000000"],
+      "3 - Moderately thick": ["#FFFC6C", "#000000"],
+      "4 - Extremely thick": ["#80F870", "#000000"],
+      "4 - Pureed": ["#80F870", "#000000"],
+      "5 - Minced and Moist": ["#F6C460", "#000000"],
+      "6 - Soft and Bite-sized": ["#2DAAFF", "#FFFFFF"],
+      "7 - Easy to Chew": ["#000000", "#FFFFFF"],
+      "7 - Regular": ["#000000", "#FFFFFF"]
+    };
+
+    let totals = {
+      Lunch: {},
+      Dinner: {}
+    };
+
+    function formatDate(dateStr) {
+      const [year, month, day] = dateStr.split("-");
+      return `${day}-${month}-${year}`;
+    }
+
+    document.getElementById('unit').addEventListener('change', showTables);
+    document.getElementById('meal').addEventListener('change', showTables);
+    document.getElementById('date').addEventListener('change', showTables);
+
+    function showTables() {
+      const date = document.getElementById('date').value;
+      const meal = document.getElementById('meal').value;
+      const unit = document.getElementById('unit').value;
+
+      if (date && meal && unit) {
+        document.getElementById('tables').classList.remove('hidden');
+        const formattedDate = formatDate(date);
+        document.getElementById('unit-title').innerText = `${unit} - ${meal} on ${formattedDate}`;
+
+        const foodTable = document.getElementById('foodTable');
+        foodTable.innerHTML = `<tr>
+          <th>Diet Texture</th><th>Soup</th><th>Meal 1</th><th>Meal 2</th>
+          <th>Vegetarian</th><th>Side-Veg</th><th>Dessert</th>
+        </tr>`;
+
+        levels.forEach(level => {
+          const [bgColor, fontColor] = iddsiMatrixStyles[level] || ["#FFFFFF", "#000000"];
+          const row = document.createElement('tr');
+          row.innerHTML = `<td style="background-color:${bgColor}; color:${fontColor};">${level}</td>` + 
+            Array(6).fill(`<td><input type="number" value="0" min="0"></td>`).join('');
+          foodTable.appendChild(row);
+        });
+      }
+    }
+
+    function saveRecord() {
+      const date = document.getElementById('date').value;
+      const meal = document.getElementById('meal').value;
+      const unit = document.getElementById('unit').value;
+      const formattedDate = formatDate(date);
+      const foodTable = document.getElementById('foodTable');
+      const targetTable = meal === "Lunch" ? document.getElementById('lunchTable') : document.getElementById('dinnerTable');
+      const statusDiv = meal === "Lunch" ? document.getElementById('lunchStatus') : document.getElementById('dinnerStatus');
+
+      if (!totals[meal][formattedDate]) {
+        totals[meal][formattedDate] = {};
+      }
+
+      for (let i = 1; i < foodTable.rows.length; i++) {
+        const level = foodTable.rows[i].cells[0].innerText;
+        if (!totals[meal][formattedDate][level]) {
+          totals[meal][formattedDate][level] = [0, 0, 0, 0, 0, 0];
+        }
+        for (let j = 1; j <= 6; j++) {
+          const input = foodTable.rows[i].cells[j].querySelector('input');
+          const value = parseInt(input.value) || 0;
+          totals[meal][formattedDate][level][j - 1] += value;
+        }
+      }
+
+      updateTotalTable(meal, formattedDate, targetTable);
+
+      const logEntry = `✅ ${unit} has been entered for ${formattedDate}`;
+      const exists = Array.from(statusDiv.children).some(el => el.textContent === logEntry);
+      if (!exists) {
+        const p = document.createElement('div');
+        p.textContent = logEntry;
+        statusDiv.appendChild(p);
+      }
+
+      localStorage.setItem('totals', JSON.stringify(totals));
+    }
+
+    function updateTotalTable(meal, dateKey, table) {
+      for (let i = table.rows.length - 1; i > 0; i--) {
+        table.deleteRow(i);
+      }
+
+      const data = totals[meal][dateKey];
+      for (let level of levels) {
+        const rowData = data[level];
+        if (!rowData) continue;
+
+        const row = document.createElement('tr');
+        const [bgColor, fontColor] = iddsiMatrixStyles[level] || ["#FFFFFF", "#000000"];
+        row.innerHTML = `<td>${dateKey}</td>` +
+          `<td style="background-color:${bgColor}; color:${fontColor};">${level}</td>` +
+          rowData.map(val => `<td>${val}</td>`).join('');
+        table.appendChild(row);
+      }
+    }
+
+    function loadRecords() {
+      const viewDate = document.getElementById('viewDate').value;
+      if (!viewDate) return alert("Please select a date.");
+
+      const formattedDate = formatDate(viewDate);
+      const saved = localStorage.getItem('totals');
+      if (!saved) return alert("No data found.");
+
+      document.getElementById('tables').classList.remove('hidden');
+      totals = JSON.parse(saved);
+
+      ["Lunch", "Dinner"].forEach(meal => {
+        const table = document.getElementById(meal.toLowerCase() + 'Table');
+        const statusDiv = document.getElementById(meal.toLowerCase() + 'Status');
+
+        for (let i = table.rows.length - 1; i > 0; i--) {
+          table.deleteRow(i);
+        }
+        statusDiv.innerHTML = '';
+
+        if (totals[meal] && totals[meal][formattedDate]) {
+          updateTotalTable(meal, formattedDate, table);
+        }
+      });
+    }
+
+    function exportTableToCSV(tableId, filename) {
+      const table = document.getElementById(tableId);
+      let csv = '';
+      for (let row of table.rows) {
+        let rowData = [];
+        for (let cell of row.cells) {
+          rowData.push('"' + cell.innerText + '"');
+        }
+        csv += rowData.join(',') + '\n';
+      }
+
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  </script>
+
+</body>
+</html>
