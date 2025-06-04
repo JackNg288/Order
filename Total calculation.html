@@ -252,32 +252,49 @@
     });
   }
 
-  function saveTotalRecord() {
-    const tables = [
-      { table: document.getElementById('lunchTable'), unit: 'Total Lunch' },
-      { table: document.getElementById('dinnerTable'), unit: 'Total Dinner' }
-    ];
+function saveTotalRecord() {
+  const iddsiOrder = levels; // Use defined IDDSI levels for sorting
 
-    tables.forEach(({ table, unit }) => {
-      for (let i = 1; i < table.rows.length; i++) {
-        const cells = table.rows[i].cells;
-        if (cells.length < 8) continue;
+  const allRows = [];
 
-        const formData = new FormData();
-        formData.append('date', cells[0].innerText);
-        formData.append('unit', unit);
-        formData.append('diet_texture', cells[1].innerText);
-        formData.append('soup', cells[2].innerText);
-        formData.append('meal1', cells[3].innerText);
-        formData.append('meal2', cells[4].innerText);
-        formData.append('vegetarian', cells[5].innerText);
-        formData.append('sideveg', cells[6].innerText);
-        formData.append('dessert', cells[7].innerText);
+  const tables = [
+    { table: document.getElementById('lunchTable'), unit: 'Total Lunch' },
+    { table: document.getElementById('dinnerTable'), unit: 'Total Dinner' }
+  ];
 
-        fetch(googleScriptURL, { method: 'POST', body: formData });
-      }
-    });
-  }
+  tables.forEach(({ table, unit }) => {
+    for (let i = 1; i < table.rows.length; i++) {
+      const cells = table.rows[i].cells;
+      if (cells.length < 8) continue;
+
+      allRows.push({
+        date: cells[0].innerText,
+        unit: unit,
+        diet_texture: cells[1].innerText,
+        soup: cells[2].innerText,
+        meal1: cells[3].innerText,
+        meal2: cells[4].innerText,
+        vegetarian: cells[5].innerText,
+        sideveg: cells[6].innerText,
+        dessert: cells[7].innerText
+      });
+    }
+  });
+
+  // Sort by date, then unit, then IDDSI level order
+  allRows.sort((a, b) => {
+    if (a.date !== b.date) return a.date.localeCompare(b.date);
+    if (a.unit !== b.unit) return a.unit.localeCompare(b.unit);
+    return iddsiOrder.indexOf(a.diet_texture) - iddsiOrder.indexOf(b.diet_texture);
+  });
+
+  // Send sorted rows to Google Sheet
+  allRows.forEach(row => {
+    const formData = new FormData();
+    Object.entries(row).forEach(([key, value]) => formData.append(key, value));
+    fetch(googleScriptURL, { method: 'POST', body: formData });
+  });
+}
 
   function exportTableToCSV(tableId, filename) {
     const table = document.getElementById(tableId);
