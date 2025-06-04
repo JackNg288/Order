@@ -180,7 +180,7 @@
       if (!totals[meal][formattedDate][level]) {
         totals[meal][formattedDate][level] = [0, 0, 0, 0, 0, 0];
       }
-      let rowData = [date, unit, level];
+      let rowData = [formattedDate, unit, level];
       for (let j = 1; j <= 6; j++) {
         const input = foodTable.rows[i].cells[j].querySelector('input');
         const value = parseInt(input.value) || 0;
@@ -253,24 +253,29 @@
   }
 
   function saveTotalRecord() {
-    const tables = [
-      { table: document.getElementById('lunchTable'), unit: 'Total Lunch' },
-      { table: document.getElementById('dinnerTable'), unit: 'Total Dinner' }
-    ];
-    tables.forEach(({ table, unit }) => {
-      for (let i = 1; i < table.rows.length; i++) {
-        const cells = table.rows[i].cells;
-        const formData = new FormData();
-        formData.append('date', cells[0].innerText);
-        formData.append('unit', unit);
-        formData.append('diet_texture', cells[1].innerText);
-        formData.append('soup', cells[2].innerText);
-        formData.append('meal1', cells[3].innerText);
-        formData.append('meal2', cells[4].innerText);
-        formData.append('vegetarian', cells[5].innerText);
-        formData.append('sideveg', cells[6].innerText);
-        formData.append('dessert', cells[7].innerText);
-        fetch(googleScriptURL, { method: 'POST', body: formData });
+    const saved = localStorage.getItem('totals');
+    if (saved) totals = JSON.parse(saved);
+
+    ['Lunch', 'Dinner'].forEach(meal => {
+      const mealData = totals[meal];
+      const unit = `Total ${meal}`;
+      for (const dateKey in mealData) {
+        const dateData = mealData[dateKey];
+        for (const level of levels) {
+          const row = dateData[level];
+          if (!row) continue;
+          const formData = new FormData();
+          formData.append('date', dateKey);
+          formData.append('unit', unit);
+          formData.append('diet_texture', level);
+          formData.append('soup', row[0]);
+          formData.append('meal1', row[1]);
+          formData.append('meal2', row[2]);
+          formData.append('vegetarian', row[3]);
+          formData.append('sideveg', row[4]);
+          formData.append('dessert', row[5]);
+          fetch(googleScriptURL, { method: 'POST', body: formData });
+        }
       }
     });
   }
