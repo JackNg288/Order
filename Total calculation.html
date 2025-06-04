@@ -161,62 +161,45 @@
     }
   }
 
-  function saveRecord() {
-    const date = document.getElementById('date').value;
-    const meal = document.getElementById('meal').value;
-    const unit = document.getElementById('unit').value;
-    const formattedDate = formatDate(date);
-    const foodTable = document.getElementById('foodTable');
-    const targetTable = meal === "Lunch" ? document.getElementById('lunchTable') : document.getElementById('dinnerTable');
-    const statusDiv = meal === "Lunch" ? document.getElementById('lunchStatus') : document.getElementById('dinnerStatus');
+function saveRecord() {
+  const date = document.getElementById('date').value;
+  const meal = document.getElementById('meal').value;
+  const unit = document.getElementById('unit').value;
+  const formattedDate = formatDate(date);
+  const foodTable = document.getElementById('foodTable');
+  const targetTable = meal === "Lunch" ? document.getElementById('lunchTable') : document.getElementById('dinnerTable');
+  const statusDiv = meal === "Lunch" ? document.getElementById('lunchStatus') : document.getElementById('dinnerStatus');
 
-    if (!totals[meal][formattedDate]) {
-      totals[meal][formattedDate] = {};
-    }
-
-    let sheetData = [];
-    for (let i = 1; i < foodTable.rows.length; i++) {
-      const level = foodTable.rows[i].cells[0].innerText;
-      if (!totals[meal][formattedDate][level]) {
-        totals[meal][formattedDate][level] = [0, 0, 0, 0, 0, 0];
-      }
-      let rowData = [formattedDate, unit, level];
-      for (let j = 1; j <= 6; j++) {
-        const input = foodTable.rows[i].cells[j].querySelector('input');
-        const value = parseInt(input.value) || 0;
-        totals[meal][formattedDate][level][j - 1] += value;
-        rowData.push(value);
-      }
-      sheetData.push(rowData);
-    }
-
-    updateTotalTable(meal, formattedDate, targetTable);
-    const logEntry = `✅ ${unit} has been entered for ${formattedDate}`;
-    const exists = Array.from(statusDiv.children).some(el => el.textContent === logEntry);
-    if (!exists) {
-      const p = document.createElement('div');
-      p.textContent = logEntry;
-      statusDiv.appendChild(p);
-    }
-
-    localStorage.setItem('totals', JSON.stringify(totals));
-
-    // Send to Google Sheets
-    sheetData.forEach(row => {
-      const formData = new FormData();
-      formData.append("date", row[0]);
-      formData.append("unit", row[1]);
-      formData.append("diet_texture", row[2]);
-      formData.append("soup", row[3]);
-      formData.append("meal1", row[4]);
-      formData.append("meal2", row[5]);
-      formData.append("vegetarian", row[6]);
-      formData.append("sideveg", row[7]);
-      formData.append("dessert", row[8]);
-
-      fetch(googleScriptURL, { method: 'POST', body: formData });
-    });
+  if (!totals[meal][formattedDate]) {
+    totals[meal][formattedDate] = {};
   }
+
+  for (let i = 1; i < foodTable.rows.length; i++) {
+    const level = foodTable.rows[i].cells[0].innerText;
+    if (!totals[meal][formattedDate][level]) {
+      totals[meal][formattedDate][level] = [0, 0, 0, 0, 0, 0];
+    }
+    for (let j = 1; j <= 6; j++) {
+      const input = foodTable.rows[i].cells[j].querySelector('input');
+      const value = parseInt(input.value) || 0;
+      totals[meal][formattedDate][level][j - 1] += value;
+    }
+  }
+
+  updateTotalTable(meal, formattedDate, targetTable);
+  const logEntry = `✅ ${unit} has been entered for ${formattedDate}`;
+  const exists = Array.from(statusDiv.children).some(el => el.textContent === logEntry);
+  if (!exists) {
+    const p = document.createElement('div');
+    p.textContent = logEntry;
+    statusDiv.appendChild(p);
+  }
+
+  // Save locally only
+  localStorage.setItem('totals', JSON.stringify(totals));
+
+  // 🚫 Removed Google Sheets submission
+}
 
   function updateTotalTable(meal, dateKey, table) {
     for (let i = table.rows.length - 1; i > 0; i--) table.deleteRow(i);
