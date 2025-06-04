@@ -252,7 +252,7 @@
     });
   }
 
-function saveTotalRecord() {
+async function saveTotalRecord() {
   const iddsiOrder = levels;
 
   const allRows = [];
@@ -262,6 +262,7 @@ function saveTotalRecord() {
     { table: document.getElementById('dinnerTable'), unit: 'Total Dinner' }
   ];
 
+  // Step 1: Collect all rows
   tables.forEach(({ table, unit }) => {
     for (let i = 1; i < table.rows.length; i++) {
       const cells = table.rows[i].cells;
@@ -281,20 +282,34 @@ function saveTotalRecord() {
     }
   });
 
+  // Step 2: Sort rows
   allRows.sort((a, b) => {
     if (a.date !== b.date) return a.date.localeCompare(b.date);
     if (a.unit !== b.unit) return a.unit.localeCompare(b.unit);
     return iddsiOrder.indexOf(a.diet_texture) - iddsiOrder.indexOf(b.diet_texture);
   });
 
-  // Send as one request
-  fetch(googleScriptURL, {
-    method: 'POST',
-    body: JSON.stringify({ batch: allRows }),
-    headers: {
-      'Content-Type': 'application/json'
-    }
-  });
+  // Step 3: Submit each row one at a time, in order
+  for (let row of allRows) {
+    const formData = new FormData();
+    formData.append('date', row.date);
+    formData.append('unit', row.unit);
+    formData.append('diet_texture', row.diet_texture);
+    formData.append('soup', row.soup);
+    formData.append('meal1', row.meal1);
+    formData.append('meal2', row.meal2);
+    formData.append('vegetarian', row.vegetarian);
+    formData.append('sideveg', row.sideveg);
+    formData.append('dessert', row.dessert);
+
+    // Wait for each row to finish sending
+    await fetch(googleScriptURL, {
+      method: 'POST',
+      body: formData
+    });
+  }
+
+  alert("✅ Data saved to Google Sheet in correct order.");
 }
 
   function exportTableToCSV(tableId, filename) {
