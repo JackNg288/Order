@@ -253,7 +253,7 @@
   }
 
 function saveTotalRecord() {
-  const iddsiOrder = levels; // Use defined IDDSI levels for sorting
+  const iddsiOrder = levels;
 
   const allRows = [];
 
@@ -281,18 +281,19 @@ function saveTotalRecord() {
     }
   });
 
-  // Sort by date, then unit, then IDDSI level order
   allRows.sort((a, b) => {
     if (a.date !== b.date) return a.date.localeCompare(b.date);
     if (a.unit !== b.unit) return a.unit.localeCompare(b.unit);
     return iddsiOrder.indexOf(a.diet_texture) - iddsiOrder.indexOf(b.diet_texture);
   });
 
-  // Send sorted rows to Google Sheet
-  allRows.forEach(row => {
-    const formData = new FormData();
-    Object.entries(row).forEach(([key, value]) => formData.append(key, value));
-    fetch(googleScriptURL, { method: 'POST', body: formData });
+  // Send as one request
+  fetch(googleScriptURL, {
+    method: 'POST',
+    body: JSON.stringify({ batch: allRows }),
+    headers: {
+      'Content-Type': 'application/json'
+    }
   });
 }
 
