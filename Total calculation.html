@@ -104,6 +104,7 @@
   <label for="viewDate">View Records for Date:</label>
   <input type="date" id="viewDate">
   <button onclick="loadRecords()">Load Records</button>
+  <button onclick="saveTotalRecord()">Save Total Record</button>
 </div>
 
 <script>
@@ -247,6 +248,29 @@
       statusDiv.innerHTML = '';
       if (totals[meal] && totals[meal][formattedDate]) {
         updateTotalTable(meal, formattedDate, table);
+      }
+    });
+  }
+
+  function saveTotalRecord() {
+    const tables = [
+      { table: document.getElementById('lunchTable'), unit: 'Total Lunch' },
+      { table: document.getElementById('dinnerTable'), unit: 'Total Dinner' }
+    ];
+    tables.forEach(({ table, unit }) => {
+      for (let i = 1; i < table.rows.length; i++) {
+        const cells = table.rows[i].cells;
+        const formData = new FormData();
+        formData.append('date', cells[0].innerText);
+        formData.append('unit', unit);
+        formData.append('diet_texture', cells[1].innerText);
+        formData.append('soup', cells[2].innerText);
+        formData.append('meal1', cells[3].innerText);
+        formData.append('meal2', cells[4].innerText);
+        formData.append('vegetarian', cells[5].innerText);
+        formData.append('sideveg', cells[6].innerText);
+        formData.append('dessert', cells[7].innerText);
+        fetch(googleScriptURL, { method: 'POST', body: formData });
       }
     });
   }
